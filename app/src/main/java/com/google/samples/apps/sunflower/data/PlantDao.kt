@@ -38,4 +38,11 @@ interface PlantDao {
 
     @Insert(onConflict = OnConflictStrategy.REPLACE)
     suspend fun insertAll(plants: List<Plant>)
+
+    @Query("SELECT * FROM plants WHERE name like '%' || :plantName || '%' ORDER BY name")
+    fun getPlantsByName(plantName: String): Flow<List<Plant>>
+
+    @Query("SELECT * FROM plants WHERE growZoneNumber = :growZoneNumber " +
+            "AND name like '%' || :plantName || '%' ORDER BY name")
+    fun getPlantsByNameAndGrowZoneNumber(growZoneNumber: Int, plantName: String): Flow<List<Plant>>
 }
