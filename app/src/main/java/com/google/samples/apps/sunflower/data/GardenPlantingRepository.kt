@@ -37,4 +37,6 @@ class GardenPlantingRepository @Inject constructor(
         gardenPlantingDao.isPlanted(plantId)
 
     fun getPlantedGardens() = gardenPlantingDao.getPlantedGardens()
+
+    fun getPlantedGardensByName(plantName: String) = gardenPlantingDao.getPlantedGardensByName(plantName)
 }
