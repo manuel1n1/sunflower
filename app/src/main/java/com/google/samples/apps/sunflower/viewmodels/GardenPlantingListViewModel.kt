@@ -22,12 +22,31 @@ import androidx.lifecycle.asLiveData
 import com.google.samples.apps.sunflower.data.GardenPlantingRepository
 import com.google.samples.apps.sunflower.data.PlantAndGardenPlantings
 import dagger.hilt.android.lifecycle.HiltViewModel
+import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.flatMapLatest
 import javax.inject.Inject
 
 @HiltViewModel
 class GardenPlantingListViewModel @Inject internal constructor(
     gardenPlantingRepository: GardenPlantingRepository
 ) : ViewModel() {
+
+    private val plantName: MutableStateFlow<String> = MutableStateFlow("")
+
     val plantAndGardenPlantings: LiveData<List<PlantAndGardenPlantings>> =
-        gardenPlantingRepository.getPlantedGardens().asLiveData()
+        plantName.flatMapLatest { plantName ->
+            if(plantName.isEmpty())
+                gardenPlantingRepository.getPlantedGardens()
+            else
+                gardenPlantingRepository.getPlantedGardensByName(plantName)
+        }
+    .asLiveData()
+
+    fun setPlantName(name : String) {
+        plantName.value = name
+    }
+
+    fun clearPlantName() {
+        plantName.value = ""
+    }
 }
