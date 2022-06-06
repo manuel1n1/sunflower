@@ -42,6 +42,10 @@ interface GardenPlantingDao {
     @Query("SELECT * FROM plants WHERE id IN (SELECT DISTINCT(plant_id) FROM garden_plantings)")
     fun getPlantedGardens(): Flow<List<PlantAndGardenPlantings>>
 
+    @Query("SELECT * FROM plants WHERE id IN (SELECT DISTINCT(plant_id) FROM garden_plantings) " +
+            "AND name like '%' || :plantName || '%' ORDER BY name")
+    fun getPlantedGardensByName(plantName: String): Flow<List<PlantAndGardenPlantings>>
+
     @Insert
     suspend fun insertGardenPlanting(gardenPlanting: GardenPlanting): Long
 
