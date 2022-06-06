@@ -16,17 +16,15 @@
 
 package com.google.samples.apps.sunflower.viewmodels
 
-import androidx.lifecycle.LiveData
-import androidx.lifecycle.SavedStateHandle
-import androidx.lifecycle.ViewModel
-import androidx.lifecycle.asLiveData
-import androidx.lifecycle.viewModelScope
+import android.util.Log
+import androidx.lifecycle.*
 import com.google.samples.apps.sunflower.PlantListFragment
+import com.google.samples.apps.sunflower.data.Params
 import com.google.samples.apps.sunflower.data.Plant
 import com.google.samples.apps.sunflower.data.PlantRepository
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.MutableStateFlow
-import kotlinx.coroutines.flow.collect
+import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.flatMapLatest
 import kotlinx.coroutines.launch
 import javax.inject.Inject
@@ -44,11 +42,25 @@ class PlantListViewModel @Inject internal constructor(
         savedStateHandle.get(GROW_ZONE_SAVED_STATE_KEY) ?: NO_GROW_ZONE
     )
 
-    val plants: LiveData<List<Plant>> = growZone.flatMapLatest { zone ->
-        if (zone == NO_GROW_ZONE) {
+    private val plantName: MutableStateFlow<String> = MutableStateFlow(NO_PLANT_NAME)
+
+    val params = combine(
+        growZone,
+        plantName
+    ) { zone, name ->
+        Params(zone, name)
+    }
+
+    val plants: LiveData<List<Plant>> = params.flatMapLatest { params ->
+        Log.i(this.javaClass.name, "Revisando query a ejecutar, datos $params")
+        if (params.growZone == NO_GROW_ZONE && params.plantName.isEmpty()) {
             plantRepository.getPlants()
+        } else if(params.growZone == NO_GROW_ZONE && !params.plantName.isEmpty()) {
+            plantRepository.getPlantsByName(params.plantName)
+        } else if(params.growZone != NO_GROW_ZONE && !params.plantName.isEmpty()) {
+            plantRepository.getPlantsByNameAndGrowZoneNumber(params.growZone, params.plantName)
         } else {
-            plantRepository.getPlantsWithGrowZoneNumber(zone)
+            plantRepository.getPlantsWithGrowZoneNumber(params.growZone)
         }
     }.asLiveData()
 
@@ -96,10 +108,19 @@ class PlantListViewModel @Inject internal constructor(
         growZone.value = NO_GROW_ZONE
     }
 
+    fun setPlantName(name : String) {
+        plantName.value = name
+    }
+
+    fun clearPlantName() {
+        plantName.value = NO_PLANT_NAME
+    }
+
     fun isFiltered() = growZone.value != NO_GROW_ZONE
 
     companion object {
         private const val NO_GROW_ZONE = -1
+        private const val NO_PLANT_NAME = ""
         private const val GROW_ZONE_SAVED_STATE_KEY = "GROW_ZONE_SAVED_STATE_KEY"
     }
 }
